@@ -1,0 +1,143 @@
+---
+title: "R Notebook Analizando la escala de empatia"
+output: html_notebook
+---
+
+En primer lugar, voy a cargar la base de datos con los datos crudos a convertir en datos analizables. La base de datos se encuentra alojada en GitHub. 
+
+```{r}
+library (readr)
+
+urlfile="https://raw.githubusercontent.com/danielivanperez/base_de_datos_empatia-09.01.2022-/main/analisis_cuantitativo_base_de_datos_empatia(09.01.2022).csv"
+
+mydata<-read_csv(url(urlfile))
+```
+  Codigo que examina la dimension de la base de datos, es decir, el numero de filas (sujetos) y columnas (variables. Esta salida me dice que hay 653 participantes en total. 
+
+```{r}
+dim(mydata)
+```
+Luego, cree un subset de variables conteniendo solamente las 3 variables atencionales.  
+
+```{r}
+control_matriz <- (mydata[, c("control_1", "control_2", "control_3")])
+```
+
+Codigo que guarda en mi laptop personal la nueva base de datos.
+
+```{r}
+write_csv(control_matriz,"los_tres_items_control.csv")
+```
+
+Este codigo elimina los 8 sujetos que fallaron 2 o 3 preguntas atencionales:
+
+```{r}
+mydata <- mydata[-c(64, 66, 68, 233, 235, 289, 510, 522), ] # notice the -
+```
+
+Codigo que guarda la nueva base de datos con 645 sujetos. 
+
+```{r}
+write_csv(mydata,"base_de_datos_empatia_n_645_(20.01.2022).csv") # guardar base de datos sin los 8 sujetos 
+```
+
+Cargo la nueva base de datos que esta alojada en GitHub con los 645 participantes que formaran parte del analisis de datos. 
+
+```{r}
+library (readr)
+urlfile_1= "https://raw.githubusercontent.com/danielivanperez/base_de_datos_empatia-09.01.2022-/main/base_de_datos_empatia_n_645_(20.01.2022).csv"
+df<-read_csv(url(urlfile_1))
+```
+Ahora lo que tengo que hacer es invertir/convertir los items para empezar a hacer los analisis de datos. 
+
+Para esto, voy a elegir los 12 items de la escala de empatia y de sistematicidad que estan en una direccion determinada ("4"=2, "3"=1,"2"=0,"1"=0). La funcion mutate_at() permite elegir un subset de columnas en una base de datos. 
+
+```{r}
+library(dplyr)
+
+df <- df %>% 
+     mutate_at(c("emp_1","emp_2","emp_4","emp_6","emp_9","sq_1","sq_3","sq_4","sq_6","sq_7","sq_9","sq_10"),    funs(recode(., "4"=2, "3"=1,"2"=0,"1"=0, .default = NaN)))
+```
+
+Ahora voy a elegir los items 8 de la escala de empatia y de sistematicidad que estan en una direccion opuesta ("4"=0, "3"=0,"2"=1,"1"=2)
+
+```{r}
+library(dplyr)
+
+df <- df %>% 
+     mutate_at(c("emp_3","emp_5","emp_7","emp_8","emp_10","sq_2","sq_5","sq_8"),funs(recode(., "4"=0, "3"=0,"2"=1,"1"=2, .default = NaN)))
+```
+
+Ahora lo que hare, es recalcular los 3 items de la escala de alexitimia (4, 5 y 10). 
+
+```{r}
+df <- df %>% 
+     mutate_at(c("ale_4","ale_5","ale_10"),funs(recode(., "1"=5, "2"=4,"3"=3,"4"=2,"5"=1, .default = NaN)))
+```
+
+Aqui basicamente lo que he hecho es invertir los 2 items (1 y 4) de la escala de toma de persectiva (Davis, 1980)
+
+```{r}
+df <- df %>% 
+     mutate_at(c("iri_1","iri_4"),funs(recode(., "1"=5, "2"=4,"3"=3,"4"=2,"5"=1, .default = NaN)))
+```
+
+Codigo que guarda la base de datos en mi laptop personal con todos los items modificados/invertidos. 
+
+```{r}
+write_csv(df,"base_de_datos_empatia_n_645_ya_modificada_invertida(20.01.2022).csv") # guardar base de datos con todos los items modificador/invertido. 
+```
+
+Ahora voy a cargar la base de datos con los datos modificados y invertidos desde GitHub para que puedan seguir el codigo. 
+
+```{r}
+library (readr)
+urlfile_2="https://raw.githubusercontent.com/danielivanperez/base_de_datos_empatia-09.01.2022-/main/base_de_datos_empatia_n_645_ya_modificada_invertida(20.01.2022).csv "
+datos<-read_csv(url(urlfile_2))
+```
+Codigo para calcular la sumatoria de los factores unidimensionales de la escala de empatia y de sistematicidad. Este codigo es sencillo porque todos los items estan uno al lado del otro. Entonces los selecciono a partir del rango de sus columnas. 
+
+```{r}  
+datos["EQ_total"]<-apply(datos[, 16:25], 1, sum)
+datos["SQ_total"]<-apply(datos[, 27:36], 1, sum)
+```
+
+Codigo para calcular los factores de los 3 factores de alexitimia. Primero voy a generar 3 subsets de columnas para cada uno de los factores de la escala de Alexitimia y, posteriormente, voy a sumar cada unos de los subsets.
+
+1. Dificultad para identificar sentimientos =  1, 3, 6, 7, 9, 13 & 14. 
+2. Dificultad para describir sentimientos = 2, 4, 11, 12 & 17. 
+3. Pensamiento orientado al exterior = 5, 8, 10 & 15. 
+
+Aqui sumo cada uno de los subfactores de la escala de alexitimia. A diferencia del codigo de arriba, los items que componen cada una de las subdimensiones del instrumentos no estan al lado del otro lado. Debido a esto, use otra sintaxis. 
+
+```{r}
+datos["ale1_iden_sent"] <- rowSums(datos[,c("ale_1","ale_3","ale_6","ale_7", "ale_9","ale_13","ale_14")])
+datos["ale2_des_sent"] <- rowSums(datos[,c("ale_2","ale_4","ale_11","ale_12", "ale_17")])
+datos["ale3_pen_ext"] <- rowSums(datos[,c("ale_5", "ale_8", "ale_10", "ale_15")])
+```
+
+Ahora voy a calcular las subdimensiones de la escala de Inteligencia Emocional:
+
+Escala de Inteligencia Emocional (TMMS-24) 24 items
+
+Percepción Emocional = 1 a 8
+Comprensión Emocional = 9 a 16
+Regulación Emocional = 17 a 24
+
+```{r}
+datos["int_emo_1_perc_emo"]<-apply(datos[, 58:65], 1, sum)
+datos["int_emo_2_compr_emo"]<-apply(datos[, 66:73], 1, sum)
+datos["int_emo_3_reg_emo"] <- apply(datos[,74:81], 1, sum)
+```
+
+Finalmente he calculado la sumatoria de la subdimension "Toma de Perspectiva" del IRI(Davis, 1980)
+
+```{r}
+datos["toma_pers"] <- apply(datos[,83:89], 1, sum)
+```
+
+Procedo a guardar el archivo generado con las subdimensiones en mi computador poersonal. 
+
+```{r}
+write_csv(datos,"base_de_datos_empatia_n_645_modificados_y_subdimensiones_(20.01.2022).csv") # guardar base de datos con todos las subdimensionas ya calculadas. 
+```
