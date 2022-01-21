@@ -1,0 +1,137 @@
+---
+title: "Analisis de Confiabilidad y Correlacion de Subdimensiones [21.01.2022]"
+output:
+  html_document:
+    df_print: paged
+---
+
+En primer lugar, voy a cargar la base de datos con los datos alojado en GitHub. 
+
+```{r}
+library (readr)
+
+urlfile="https://raw.githubusercontent.com/danielivanperez/base_de_datos_empatia-09.01.2022-/main/base_de_datos_empatia_n_645_modificados_y_subdimensiones_(20.01.2022).csv"
+
+df_empatia <-read_csv(url(urlfile))
+```
+
+*Analisis de Confiabilidad de Escala de Empatia*
+
+Definicion de los 10 items de empatia para posteriormente aplicar alpha de cronbach.  
+```{r}
+empathy_items <- df_empatia[,16:25]
+```
+
+Analisis de alfa de cronbach via libreria "ltm". 
+```{r}
+library("ltm")
+cronbach.alpha(empathy_items)
+```
+```{r}
+library("psych")
+alpha(empathy_items)#, delete=TRUE)
+```
+El analisis de correlacion de alpha de cronbach esta OK (alpha = 0.741). Al parecer, no es necesario eliminar ningun item para mejorar la confiabilidad de la escala. 
+
+*Analisis de Confiabilidad de las otras escalas*
+
+*Escala de Sistematicidad*
+
+```{r}
+alpha(df_empatia[, 27:36])
+```
+Confiabilidad de la escala de Sistematicidad "suficiente", alpha = 0.62.
+
+
+*Subdimensiones de la escala de alexitimia*
+
+1. Dificultad para identificar sentimientos =  1, 3, 6, 7, 9, 13 & 14. 
+
+```{r}
+library("psych")
+alpha(df_empatia[,c("ale_1","ale_3","ale_6","ale_7", "ale_9","ale_13","ale_14")])#, delete=TRUE)
+```
+
+Confiabilidad de la escala de Dificultad para identificar sentimientos OK, alpha = 0.89.
+
+**2. Dificultad para describir sentimientos = 2, 4, 11, 12 & 17.** 
+
+```{r}
+alpha(df_empatia[,c("ale_2","ale_4","ale_11","ale_12", "ale_17")])#, delete=TRUE)
+```
+
+Confiabilidad de la escala de Dificultad para describir sentimientos OK, alpha = 0.83.
+
+**3. Pensamiento orientado al exterior = 5, 8, 10 & 15.**
+
+```{r}
+alpha(df_empatia[,c("ale_5", "ale_8", "ale_10", "ale_15")])
+```
+
+Confiabilidad de Escala pensamiento orientado al exterior mala (alpha = 0.31). De acuerdo a la salida de arriba, podria eliminar el item 5, y el alpha subiria a 0.34 pero aun asi es poco. Hay que interpretar con precaucion los resultados de esta subdimension.  
+
+*Escala de Inteligencia Emocional*
+
+Ahora voy a calcular las confiabilidades de la escala de Inteligencia Emocional:
+
+Escala de Inteligencia Emocional (TMMS-24) 24 items
+
+Confiabilidad de Percepción Emocional = 1 a 8
+
+```{r}
+alpha(df_empatia[, 58:65])
+```
+Confiabilidad de la escala de Percepcion Emocional OK, alpha = 0.86.
+
+
+**Confiabilidad de Comprensión Emocional = 9 a 16**
+
+```{r}
+alpha(df_empatia[, 66:73])
+```
+
+Confiabilidad de la escala de Comprension Emocional OK, alpha = 0.91.
+
+**Confiabilidad de Regulación Emocional = 17 a 24**
+
+```{r}
+alpha(df_empatia[,74:81])
+```
+
+Confiabilidad de la escala de Regulacion Emocional OK, alpha = 0.85.
+
+*Escala de Toma de Perspectiva (Davis, 1980)*
+
+```{r}
+alpha(df_empatia[,83:89])
+```
+Confiabilidad de la escala de Toma de Perspectiva OK, alpha = 0.73.
+
+Conclusion a partir de los analisis de confiabilidad de las subdimensiones. 
+
+Todas las subdimensiones muestran indicadores aceptables de confiabilidad, excepto la escala de sistematicidad (alpha suficiente) y el tercer factor de alexitimia (orientacion al pensamiento exterior) que es derechamente malo.  
+
+*** Matriz de Correlacion entre factores y subdimensiones***
+
+
+```{r}
+library(corrplot)
+matrix_correlation <- round(cor(df_empatia[,90:98], use = "complete.obs"), 2) # aplique use='complete.obs' para que computara la correlacion de toma de perspectiva ya que tiene algunos NA porque hay menos muestra
+matrix_correlation
+```
+
+```{r}
+corrplot(matrix_correlation, method="square", diag=FALSE, col = COL2('RdYlBu', 10), type="upper")
+```
+
+
+```{r}
+# A continuacion estoy usando la libreria "Hmisc" para ver tanto los coeficientes de correlacion como los valores P (tabla de abajo)
+library("Hmisc")
+cor_2 <- rcorr(as.matrix(matrix_correlation))
+cor_2
+```
+
+
+
+
